@@ -130,6 +130,19 @@ that it fails, which the selection-focused literature does not test. Where Chane
 recommender can homogenize *what people consume*, we show a generator can homogenize *what
 people make*, and that the loop, not the model's breadth, is the lever.
 
+*Language models as proxies for people.* Our creators are LLM personas, which raises the
+question of what such a population can stand in for. Two lines of work bound the answer.
+Argyle et al. @argyle2023silicon introduce *silicon sampling* and show *algorithmic
+fidelity*: conditioned on demographic backstories, a model reproduces the response
+distributions of real human subgroups well enough to be a research instrument. Park et al.
+@park2023generative show that LLM agents with memory and reflection produce believable,
+emergent social behavior in a sandbox society. These results justify using persona populations
+to study a *mechanism*, while also marking the ceiling: fidelity is partial and
+demography-dependent, so a persona study is a hypothesis generator about human culture, not a
+substitute for measuring it. We lean on this literature for the claim that the *loop dynamics*
+we isolate are informative, and we defer to it for the claim that the *magnitudes* would
+transfer to people, which they may not.
+
 = Method
 
 == Population and task
@@ -191,6 +204,31 @@ The credibility of a diversity result rests entirely on the controls.
 + *Temperature* is held at $1.0$ on every generating call, every condition.
 + *Reproducibility.* All sampling is seeded; model snapshot IDs and dates are pinned;
   generations are content-cached so a re-run reproduces the same artifacts.
+
+== Procedure
+
+The full loop is given below. The only structural difference between conditions is what the
+advisor sees: nothing (SOLO has no advisor), a fixed prompt (AI\_STATIC), or a sample of the
+previous generation's artifacts (AI\_FEEDBACK, AI\_DIVERSE). The trending sample $T_t$ is what
+closes the loop.
+
+#block(inset: (left: 8pt), stroke: (left: 1.5pt + luma(180)))[
+  #set text(9pt)
+  *for* each generation $t = 0, ..., G-1$: \
+  #h(1em) $T_t arrow.l$ sample of $min(4, N)$ artifacts from generation $t-1$ (reflective conditions only) \
+  #h(1em) *for* each creator $i = 1, ..., N$: \
+  #h(2em) *if* condition is SOLO: $a_i^t arrow.l$ $"persona"_i$ writes on the theme \
+  #h(2em) *else*: $s arrow.l$ advisor (shown $T_t$ if reflective) suggests; $a_i^t arrow.l$ $"persona"_i$ incorporates $s$ \
+  #h(1em) $E_t arrow.l$ embed$(a_1^t, ..., a_N^t)$; record $D_t$, $"PR"_t$, lexical metrics
+]
+
+Anisotropy control is a single shared shift. With $mu = (1\/M) sum_{a in cal(A)} "embed"(a)$ the
+mean over *all* $M$ artifacts in the run (every condition, every generation), the centered
+dispersion is
+$ D_t = frac(2, N(N-1)) sum_(i<j) (1 - cos(e_i - mu, e_j - mu)), quad e_i in E_t. $
+Sharing $mu$ across conditions makes the four curves directly comparable, and because $mu$ is a
+single vector estimated from $M = 4 times G times N$ points it is well-determined, unlike a full
+covariance.
 
 = Results
 
@@ -277,6 +315,25 @@ quality filter would catch, it is an *improvement* on every individual axis a wr
 platform would optimise. That is what makes it dangerous.
 
 #figure(
+  table(
+    columns: (auto, auto, auto, auto, auto),
+    inset: 5pt,
+    align: (left, center, center, center, center),
+    stroke: 0.4pt + luma(180),
+    table.header(
+      [*Condition*], [*Quality (raw)*], [*Quality (len-adj.)*], [*distinct-2 g0→g5*], [*Variety g5*],
+    ),
+    [Solo], [$5.03$], [$5.23$], [$0.840 arrow.r 0.842$], [$100.4%$],
+    [AI static], [$5.19$], [$5.23$], [$0.859 arrow.r 0.854$], [$102.0%$],
+    [AI reflective loop], [$bold(5.71)$], [$bold(5.60)$], [$0.858 arrow.r 0.861$], [$89.7%$],
+    [Reflective + diverse], [$5.63$], [$5.49$], [$0.874 arrow.r 0.877$], [$88.5%$],
+  ),
+  caption: [Quality, lexical diversity, and semantic variety by condition (means over three
+    themes). Quality is highest where semantic variety is lowest; lexical diversity (distinct-2)
+    is flat everywhere, confirming the convergence is semantic, not lexical.],
+) <tab-quality>
+
+#figure(
   image("figs/fig2_scissors.png", width: 88%),
   caption: [The scissors. Individual artifact quality (length-adjusted, cross-family judge)
     against population dispersion, by condition. Quality holds or rises under AI mediation
@@ -361,6 +418,25 @@ that would have existed without the loop, is never observed. An instrument that 
 counterfactual visible, by holding the population fixed and toggling only the loop, is therefore
 not a measurement of taste but of an externality.
 
+== Culture as a search, and the loop as premature convergence
+
+There is a way of seeing the result that makes its stakes precise. Treat a culture as running a
+search over the space of things worth making. Diversity is not the goal of that search; it is its
+*exploration budget*, the supply of live alternatives from which the next good idea is drawn. A
+population with wide dispersion is exploring; one that has contracted to an attractor has switched
+to exploitation, refining a single basin. Exploitation is not wrong, it is how a tradition deepens,
+but it is only safe once the space has been searched enough that the current basin is worth
+committing to. The danger of the reflective loop is that it forces the switch *early and
+invisibly*. Each round, conditioning on what already resonated raises the exploitation rate by a
+little, and because every individual piece gets better, nothing signals that the exploration budget
+is being spent down. The culture converges on a good local optimum before it has any way of knowing
+whether a better one was reachable, and once converged it has thrown away the variance it would need
+to find out. This is the same structure as value lock-in @bostrom2014superintelligence
+@macaskill2022what at civilizational scale: not a wrong value imposed by force, but a *premature
+commitment* to a locally attractive one, made before deliberation finished, by a process that felt
+like improvement at every step. Our six-generation curve is a laboratory instance of that ratchet,
+slowed down enough to watch.
+
 == Why a diverse advisor cannot save the loop
 
 The most counterintuitive result is that diversifying the advisor does not help. The intuition
@@ -444,6 +520,36 @@ entirely through context and a population of independent creators. That the same
 appears without any parameter update suggests the phenomenon is about *information flow in a
 closed loop*, not about the fragility of any particular training procedure, which is both
 more general and harder to patch.
+
+= Threats to validity
+
+Beyond the headline caveats, four specific threats deserve naming.
+
+*Judge reliability.* The quality scissors depends on a judge, and judges are biased, a fact we
+have measured ourselves. We use a cross-family judge (Anthropic rating OpenAI-generated text) so
+the rater is not scoring its own family, keep it blind to condition, and length-residualize the
+scores because judges reward length. The residual risk is that the judge shares some
+human-preference bias with the generator; but since that bias would be *common* across
+conditions, it cannot by itself create the *between-condition* quality ordering we report.
+
+*Persona-as-proxy magnitudes.* The silicon-sampling literature supports using personas to study
+a mechanism but not to read off human magnitudes (Section 2). Our quantitative claims (10 to
+12%, $alpha approx 0.05$) are properties of *this* simulated population; the direction and the
+dissociation are the transferable results, not the numbers.
+
+*Selection of themes and tasks.* We use three story themes; the appendix shows the effect in each,
+and the harness supports metaphor and pitch tasks, but three themes is a small sample of "creative
+work." A broader task battery could change the magnitude and is left to future work.
+
+*Prompt-wording sensitivity.* The reflective effect is induced by one instruction ("suggest in the
+spirit of what is resonating"). A weaker or stronger phrasing would presumably move $alpha$. This is
+a feature, not a bug, it localizes the cause to the reflection instruction, but it means the
+magnitude is tied to a particular, reasonable, operationalization of "echo the crowd."
+
+*Multiplicity.* We report four conditions across three themes. The dissociation does not rest on a
+single threshold-crossing $p$-value: it is the *pattern* (two flat conditions, two declining,
+consistent in sign across all three themes) that carries the claim, which is robust to the kind of
+multiple-comparison concern a single starred result would invite.
 
 = Limitations and future work
 
