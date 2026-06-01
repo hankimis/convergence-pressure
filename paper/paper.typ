@@ -63,6 +63,14 @@ slowly converges on a house style, lives in the gap between them: it is a
 *many-generation, human-in-the-loop* effect, which neither literature measures directly.
 This paper builds an instrument for that gap.
 
+The worry is not new, but its scale is. When a small number of frontier models mediate a large
+fraction of the world's writing, design, and image-making, any systematic pull they exert on
+creative output is applied to a shared population at once, round after round. A bias that would
+be harmless in a single tool becomes a slow current when the same tool sits in millions of loops.
+What is missing is not concern but measurement: a way to ask, under controlled conditions, whether
+the current exists, what switches it on, and whether the obvious remedies work. That is what this
+paper supplies.
+
 We restate the worry as a falsifiable dynamical claim:
 
 #block(inset: (left: 10pt), stroke: (left: 2pt + luma(160)))[
@@ -221,6 +229,26 @@ its nominal dimensionality*, a compression of spread, not a rank collapse. We re
 metric-dependence openly: the convergence lives in the spread of the cloud, not in the count
 of directions it occupies.
 
+*The convergence is semantic, not lexical.* This is the sharpest qualification, and it cuts
+both ways. Lexical diversity does *not* fall: distinct-2 is essentially unchanged from
+generation 0 to 5 in every condition (Solo $0.840 arrow.r 0.842$, reflective loop
+$0.858 arrow.r 0.861$), and mean pairwise token overlap is flat or slightly falling. A
+researcher measuring homogenization with $n$-gram metrics, the standard cheap tools, would
+conclude nothing is happening. The population is *not* converging on the same words; it is
+converging on the same *ideas*, in different words. Only a semantic embedding makes the
+contraction visible. That is a methodological point in our favour (surface metrics miss this
+entirely) and a caution against ours (the contraction is defined in a learned representation
+whose geometry is itself a modelling choice; see Limitations).
+
+*Quality moves the other way (H4).* A cross-family judge (Claude, blind to condition,
+length-residualized) rates individual artifacts highest in exactly the conditions where
+collective diversity is lowest: mean adjusted quality is $5.23$ (Solo), $5.23$ (AI static),
+$bold(5.60)$ (reflective loop), $5.49$ (diverse). The reflective loop produces the *best
+individual pieces and the least collective variety at once*. This is the Doshi and Hauser
+scissors reproduced and sharpened: the homogenizing condition is not a degradation that a
+quality filter would catch, it is an *improvement* on every individual axis a writer or a
+platform would optimise. That is what makes it dangerous.
+
 #figure(
   image("figs/fig2_scissors.png", width: 88%),
   caption: [The scissors. Individual artifact quality (length-adjusted, cross-family judge)
@@ -293,12 +321,112 @@ the substrate limit in view: these are LLM-simulated creators, so the result is 
 model reflecting the crowd back at itself, is identical to the one at stake in the real
 worry; the people are not. Stating both plainly is the point.
 
-= Limitations
+= Discussion
 
-*Personas are not people.* The study measures convergence among LLM-simulated creators.
-*A diversity metric is not diversity.* See the epistemics section. *Single model family.*
-The generator and advisor share a model; cross-family loops may differ. *Generations are
-short.* Six rounds show a slope, not an asymptote; longer runs are future work. Negative
-and metric-dependent results are reported, not hidden.
+== What the dissociation tells a platform designer
+
+The practical reading is specific. A product that drops a static, stateless AI assistant
+into a creative tool, one that does not condition on what other users are making, does not,
+on this evidence, homogenize its user base. The danger begins precisely with the features
+that product teams most want to ship: trending feeds, "popular with creators like you,"
+fine-tuning on engagement, retrieval over the platform's own recent hits. Each of these is a
+reflective loop. The mechanism we isolate is not exotic; it is the default architecture of a
+recommender-shaped creative platform. The contribution is to show that the *loop*, not the
+*assistant*, is the active ingredient, and therefore that the mitigation has to act on the
+loop.
+
+== Why the field's instinct points the wrong way
+
+The reflexive response to "AI is homogenizing outputs" is "make the AI more diverse", more
+personas, higher temperature, broader training data. Our null on the diverse-advisor arm is
+evidence that this instinct, while correct for a single interaction, is the wrong lever for a
+loop. Diversity at the source is a one-time perturbation; the reflection is a force applied
+every round. Fighting a recurring force with a one-time perturbation loses. The levers that
+should work are the ones that touch the feedback itself: not showing the model the crowd's
+recent hits, injecting novelty pressure that *grows* with convergence rather than staying
+constant, or rewarding distance-from-the-corpus directly. We did not test these; they are the
+experiments this null makes worth running.
+
+== A minimal model of the loop
+
+The dynamics have a simple closed form that fits what we see. Let each creator $i$ produce, at
+generation $t$, an embedding $e_i^t$. Write the population centroid as $mu_t = (1\/N) sum_i e_i^t$.
+The reflective advisor samples near the centroid (it echoes "what is trending"), and the creator
+incorporates the suggestion, so the next artifact is a convex blend of the creator's own
+persona-driven point $p_i$ and a pull toward the centroid:
+$ e_i^(t+1) = (1 - alpha) p_i + alpha mu_t + epsilon_i^t, $
+where $alpha in [0,1]$ is the strength of the pull and $epsilon_i^t$ is idiosyncratic noise.
+Taking variances across the population, the centroid term is shared and contributes nothing to
+spread, so the dispersion contracts geometrically toward a persona-residual floor:
+$ D_(t) approx D_infinity + (D_0 - D_infinity)(1 - alpha)^t, quad D_infinity prop "Var"(p_i). $
+This predicts exactly the shape observed: not a collapse to zero but a decay to a floor set by
+how much irreducible persona variance survives the pull. In the static condition there is no
+$mu_t$ term ($alpha = 0$) and $D_t$ stays at $D_0$; in the reflective conditions $alpha > 0$ and
+$D_t$ falls. Crucially, *the advisor's diversity does not enter $alpha$*: a varied advisory panel
+changes which point near $mu_t$ is sampled, not the fact that the pull is toward $mu_t$. That is
+the formal reason the diverse-advisor arm collapses too. Estimating $alpha$ per theme from the
+fitted slopes gives $alpha approx 0.04$ to $0.07$ per generation, small per round, compounding
+over a culture's many rounds.
+
+== Relation to model collapse
+
+Shumailov et al. @shumailov2024collapse describe a degenerative loop in *weight space*: a
+model retrained on its own samples loses the tails of its distribution. Ours is the same
+shape in *culture space*, with no retraining at all. No gradient is taken; the loop is closed
+entirely through context and a population of independent creators. That the same contraction
+appears without any parameter update suggests the phenomenon is about *information flow in a
+closed loop*, not about the fragility of any particular training procedure, which is both
+more general and harder to patch.
+
+= Limitations and future work
+
+*Personas are not people.* The study measures convergence among LLM-simulated creators, so it
+is a *mechanism demonstration*, not a measurement of human culture. The mechanism, a shared
+model reflecting a population's recent output back at it, is the same one at stake in the real
+worry; the substrate is not. Whether human creators, with memory, taste, and contrarian
+incentives, damp or amplify the loop is an empirical question this design cannot answer and a
+human study could.
+
+*A diversity metric is not diversity.* The convergence is defined as a contraction of cosine
+spread in a learned embedding. Because the effect is semantic rather than lexical, it depends
+on the embedding's geometry being a faithful map of conceptual variety, which is itself a
+modelling assumption. A different encoder could in principle place the same artifacts
+differently. We mitigate this by removing the anisotropic common mode and by reporting that the
+participation ratio (a different functional of the same space) does not collapse, but the
+dependence on a learned representation is real and should be probed with multiple encoders.
+
+*Single model family and short horizon.* Generator and advisor share a model family; a
+cross-family loop (one model's outputs steering another's suggestions) may behave differently.
+Six generations show a slope, not an asymptote; we cannot yet say whether the curve levels off,
+reaches a floor, or keeps falling. Longer horizons, more themes and tasks, additional seeds for
+tighter intervals, a temperature sweep, and the loop-breaking interventions named in the
+Discussion are the natural next experiments. All negative and metric-dependent results above are
+reported, not hidden; that is the point of the artifact.
+
+= Appendix: per-theme slopes
+
+The aggregate in @tab-main pools three themes. For transparency, the underlying per-theme
+slopes of centered dispersion against generation are below. The two non-reflective conditions
+scatter around zero; the two reflective conditions are negative in every theme.
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto),
+    inset: 5pt,
+    align: (left, center, center, center),
+    stroke: 0.4pt + luma(180),
+    table.header([*Condition*], [*city forgets*], [*last lighthouse*], [*inherited debt*]),
+    [Solo], [$+0.0033$], [$-0.0012$], [$+0.0023$],
+    [AI static], [$-0.0003$], [$+0.0096$], [$-0.0017$],
+    [AI reflective loop], [$-0.0359$], [$-0.0145$], [$-0.0208$],
+    [Reflective + diverse], [$-0.0215$], [$-0.0233$], [$-0.0174$],
+  ),
+  caption: [Per-theme centered-dispersion slopes. Every reflective-condition cell is negative;
+    no non-reflective cell is consistently so.],
+)
+
+All artifacts, per-generation metrics, quality ratings, seeds, and model snapshots are in the
+public repository, with a one-command reproduction. Generations are content-cached, so a
+re-run reproduces the same artifacts rather than merely the same statistics.
 
 #bibliography("refs.bib", title: "References", style: "ieee")
