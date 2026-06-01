@@ -88,6 +88,16 @@ measurement, with the confounds removed by construction rather than waved away. 
 honest, reproducible artifact: seeds and model snapshots are pinned, generations are
 content-cached, and negative and metric-dependent results are reported rather than hidden.
 
+The paper proceeds as follows. Section 3 lays out the population, conditions, metrics, and
+the confound controls that make a diversity claim defensible. Section 4 reports the
+dissociation, the failed mitigation, the semantic-not-lexical qualification, and the quality
+scissors. Section 5 discusses what the result means for anyone building a creative tool, why
+the field's reflexive remedy points the wrong way, and how the loop relates to model collapse,
+with a minimal contraction-map model that predicts the observed decay-to-a-floor. Section 6
+turns to epistemics: what a falling number can and cannot license, why diversity is a welfare
+question rather than a matter of taste, and the limits of measuring culture through a learned
+representation.
+
 = Related work
 
 *Individual gain, collective loss.* @doshi2024generative and @padmakumar2024writing
@@ -102,6 +112,23 @@ the population's recent hits. No weights are updated; the loop runs entirely in 
 *Mitigations.* Wan and Kalman @wan2026diverse show that assigning *diverse* AI personas
 preserves variety in collaborative ideation. We test this as an intervention arm and
 measure how much of the collapse it arrests.
+
+*Algorithmic monoculture and feedback loops.* A parallel literature studies homogenization
+when many decision-makers rely on the same model. Kleinberg and Raghavan
+@kleinberg2021monoculture analyze the social welfare cost of *algorithmic monoculture*, where
+shared algorithms produce correlated decisions; Bommasani et al. @bommasani2022homogenization
+formalize *outcome homogenization*, showing that sharing training data or a foundation model
+makes individuals experience the same outcomes across deployments. Closest to us in mechanism,
+Chaney et al. @chaney2018confounding simulate a recommendation feedback loop and find it
+*increases user homogeneity without increasing utility*, exactly the welfare-negative signature
+we recover in a generative setting. Three things distinguish our study. First, the prior work is
+about *selection and recommendation* (which item, which applicant), whereas we measure the
+diversity of *generated content* itself. Second, our loop closes through *in-context
+reflection* with no parameter update, so the homogenization is not a property of any training
+procedure. Third, we run the obvious remedy, advisor diversity, as a controlled arm and report
+that it fails, which the selection-focused literature does not test. Where Chaney et al. show a
+recommender can homogenize *what people consume*, we show a generator can homogenize *what
+people make*, and that the loop, not the model's breadth, is the lever.
 
 = Method
 
@@ -262,6 +289,15 @@ platform would optimise. That is what makes it dangerous.
     anisotropy-centered, and length-matched dispersion for the reflective condition.],
 ) <fig-confound>
 
+#figure(
+  image("figs/fig5_pca.png", width: 72%),
+  caption: [The contraction made visible. Generation-0 and final-generation artifact
+    embeddings under the reflective loop (steepest theme), projected to the top two principal
+    components fit on generation 0. The starting population fills the space; the final
+    population has pulled in toward a centre, with the headline dispersion falling from
+    $0.995$ to $0.816$.],
+) <fig-pca>
+
 = Epistemics and philosophy
 
 == What a falling number can and cannot mean
@@ -276,6 +312,20 @@ space by surface features), and it can score low while being deeply varied (a ti
 of profound, mutually irreducible positions). The honest claim is therefore narrow and
 conditional: *under this operationalization*, the reflective loop compresses the measured
 variety, and that compression is *evidence about*, not proof of, the cultural worry.
+
+A worked caution makes the gap concrete. Suppose the embedding model were itself trained on a
+corpus that treats two genuinely distinct literary traditions as near-synonymous, because they
+share surface vocabulary. Then a population converging on one of those traditions would register
+*no* loss of dispersion, even though a human reader steeped in both would see a real
+impoverishment. The reverse can also happen: a population could drift apart on an axis the
+embedding over-weights (say, sentiment) while becoming, in every way a critic cares about,
+more alike. The number we report is faithful to the geometry of one encoder; it inherits that
+encoder's blind spots and its emphases. We take two precautions against over-reading it, removing
+the dominant anisotropic direction so the metric is not just tracking a single common mode, and
+reporting a second functional of the same space (the participation ratio) that moves differently.
+But the honest position is that the result is a strong, controlled signal *in this representation*,
+and that confirming it across encoders, and ultimately against human judgments of variety, is part
+of what would turn a mechanism demonstration into a measurement of culture.
 
 == Why diversity is not a luxury
 
@@ -293,6 +343,23 @@ trajectory before it has finished deliberating. A reflective AI loop is a candid
 lock-in mechanism that needs no malice and no superintelligence, only ubiquity. Each round
 it gently re-weights the population toward what already resonated, and the space of what
 *could* resonate next contracts. Our experiment is a scale model of that ratchet.
+
+== Monoculture as a welfare question, not an aesthetic one
+
+It is easy to hear "less diversity" as a complaint about taste, as if the worry were that
+AI-mediated culture is *boring*. The literature on algorithmic monoculture reframes it as a
+question of welfare and risk. Kleinberg and Raghavan @kleinberg2021monoculture show that when
+many decision-makers adopt the same algorithm, the *aggregate* can be worse off even when the
+algorithm is individually better, because correlated decisions forfeit the error-averaging that
+independent ones provide. Chaney et al. @chaney2018confounding find the recommender analogue:
+homogenization rises *without a corresponding rise in utility*, a strictly bad trade. Our scissors
+is the generative version of the same bargain. Each writer, locally, gets a better piece; the
+population, globally, loses the variance that makes a culture robust, searchable, and capable of
+surprising itself. The individual improvement is real, which is exactly why the collective cost is
+easy to miss, no one experiences the lost diversity, because the counterfactual culture, the one
+that would have existed without the loop, is never observed. An instrument that makes the
+counterfactual visible, by holding the population fixed and toggling only the loop, is therefore
+not a measurement of taste but of an externality.
 
 == Why a diverse advisor cannot save the loop
 

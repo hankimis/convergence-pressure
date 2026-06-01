@@ -197,9 +197,53 @@ def fig_scissors(runs):
     print("wrote fig2_scissors.png")
 
 
+def fig_pca(runs):
+    """Gen-0 vs final-gen embedding clouds for the reflective loop, projected to 2-D PCA
+    (fit on the pooled gen-0 cloud). Shows the population visibly contracting."""
+    from sklearn.decomposition import PCA  # local import
+
+    from .llm import embed
+    from . import metrics
+    cond = "AI_FEEDBACK"
+    # Single theme: pooling themes would let between-theme spread swamp the within-theme
+    # contraction we are showing. Pick the theme with the steepest decline; the appendix
+    # lists every theme's slope so this is representative, not cherry-picked.
+    def slope(r):
+        ms = sorted(r["conditions"][cond]["metrics"], key=lambda m: m["gen"])
+        y = np.array([m["dispersion_centered"] for m in ms])
+        return np.polyfit(np.arange(len(y)), y, 1)[0]
+    r = min(runs, key=slope)
+    theme = r["meta"]["theme"]
+    arts = r["conditions"][cond]["artifacts"]
+    g0_texts, gl_texts = arts[0], arts[-1]
+    e0 = embed(g0_texts, runs[0]["meta"]["emb_model"])
+    el = embed(gl_texts, runs[0]["meta"]["emb_model"])
+    gmean = np.vstack([e0, el]).mean(axis=0)
+    e0c, elc = e0 - gmean, el - gmean
+    pca = PCA(n_components=2).fit(e0c)
+    p0, pl = pca.transform(e0c), pca.transform(elc)
+    # Label with the headline run metric (run-global-mean centered) so the figure is
+    # consistent with the tables, not a separately-centered number.
+    ms = sorted(r["conditions"][cond]["metrics"], key=lambda m: m["gen"])
+    d0, dl = ms[0]["dispersion_centered"], ms[-1]["dispersion_centered"]
+    fig, ax = plt.subplots(figsize=(7, 6))
+    ax.scatter(p0[:, 0], p0[:, 1], s=42, c="#2a7f3f", alpha=0.7, label=f"Generation 0  (dispersion {d0:.3f})", edgecolors="none")
+    ax.scatter(pl[:, 0], pl[:, 1], s=42, c="#c0392b", alpha=0.7, label=f"Final generation  (dispersion {dl:.3f})", edgecolors="none")
+    ax.set_title(f"The cloud contracts: reflective loop, gen 0 vs final\ntheme: “{theme}”", fontsize=12, weight="bold")
+    ax.set_xlabel("PC 1"); ax.set_ylabel("PC 2")
+    ax.legend(frameon=False, fontsize=9, loc="best")
+    ax.grid(True, alpha=0.2)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(FIGS / "fig5_pca.png")
+    print("wrote fig5_pca.png")
+
+
 if __name__ == "__main__":
     runs = load_runs()
     fig_dispersion(runs)
     fig_scissors(runs)
     fig_effdim(runs)
     fig_confound(runs)
+    fig_pca(runs)
