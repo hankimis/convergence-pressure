@@ -240,6 +240,87 @@ def fig_pca(runs):
     print("wrote fig5_pca.png")
 
 
+def gif_pca_contraction(runs):
+    """Animated: the reflective-loop embedding cloud contracting generation by generation."""
+    from sklearn.decomposition import PCA
+    from .llm import embed
+    cond = "AI_FEEDBACK"
+
+    def slope(r):
+        ms = sorted(r["conditions"][cond]["metrics"], key=lambda m: m["gen"])
+        y = np.array([m["dispersion_centered"] for m in ms])
+        return np.polyfit(np.arange(len(y)), y, 1)[0]
+    r = min(runs, key=slope)
+    theme = r["meta"]["theme"]
+    arts = r["conditions"][cond]["artifacts"]
+    embs = [embed(g, runs[0]["meta"]["emb_model"]) for g in arts]
+    allp = np.vstack(embs)
+    gmean = allp.mean(axis=0)
+    pca = PCA(n_components=2).fit(embs[0] - gmean)
+    proj = [pca.transform(e - gmean) for e in embs]
+    ms = sorted(r["conditions"][cond]["metrics"], key=lambda m: m["gen"])
+    disp = [m["dispersion_centered"] for m in ms]
+    allxy = np.vstack(proj)
+    fig, ax = plt.subplots(figsize=(7, 6))
+    xpad = (allxy[:, 0].max() - allxy[:, 0].min()) * 0.08
+    ypad = (allxy[:, 1].max() - allxy[:, 1].min()) * 0.08
+    ax.set_xlim(allxy[:, 0].min() - xpad, allxy[:, 0].max() + xpad)
+    ax.set_ylim(allxy[:, 1].min() - ypad, allxy[:, 1].max() + ypad)
+    ax.set_xlabel("PC 1"); ax.set_ylabel("PC 2")
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.grid(True, alpha=0.2)
+    g0 = ax.scatter(proj[0][:, 0], proj[0][:, 1], s=46, c="#2a7f3f", alpha=0.35, edgecolors="none", label="generation 0")
+    live = ax.scatter([], [], s=58, c="#c0392b", alpha=0.85, edgecolors="white", linewidths=0.5)
+    title = ax.set_title("", fontsize=12, weight="bold")
+    ax.legend(loc="upper right", frameon=False, fontsize=9)
+
+    def frame(g):
+        live.set_offsets(proj[g])
+        title.set_text(f"Reflective loop: the cloud contracts (theme: “{theme}”)\n"
+                       f"generation {g}   ·   dispersion {disp[g]:.3f}")
+        return live, title
+
+    ani = animation.FuncAnimation(fig, frame, frames=len(proj), interval=900, blit=False)
+    ani.save(FIGS / "gif_pca_contraction.gif", writer=animation.PillowWriter(fps=1.4))
+    print("wrote gif_pca_contraction.gif")
+
+
+def gif_scissors(runs):
+    """Animated reveal of the scissors: conditions appear left to right, quality bars rise
+    while the diversity line drops."""
+    if "quality" not in runs[0]["conditions"].get(COND_ORDER[0], {}):
+        print("skip gif_scissors (no quality scores)")
+        return
+    conds = [c for c in COND_ORDER if c in runs[0]["conditions"]]
+    qual = [np.mean([np.mean([q["mean_adj"] for q in r["conditions"][c]["quality"]]) for r in runs]) for c in conds]
+    disp = [np.mean([np.mean([m["dispersion_centered"] for m in r["conditions"][c]["metrics"]]) for r in runs]) for c in conds]
+    x = np.arange(len(conds))
+    labels = [COND_LABEL[c] for c in conds]
+    fig = plt.figure(figsize=(8, 5))
+
+    def frame(i):
+        fig.clf()
+        ax1 = fig.add_subplot(111)
+        ax2 = ax1.twinx()
+        k = i + 1
+        ax1.bar(x[:k], qual[:k], width=0.5, color="#c9962a", alpha=0.75)
+        ax2.plot(x[:k], disp[:k], "-o", color="#c0392b", lw=2.5, ms=7)
+        ax1.set_xlim(-0.6, len(conds) - 0.4)
+        ax1.set_ylim(min(qual) * 0.96, max(qual) * 1.02)
+        ax2.set_ylim(min(disp) * 0.98, max(disp) * 1.02)
+        ax1.set_xticks(x); ax1.set_xticklabels(labels, rotation=15, ha="right", fontsize=8)
+        ax1.set_ylabel("Individual quality (length-adj.)", color="#9a6f12")
+        ax2.set_ylabel("Population diversity", color="#c0392b")
+        ax1.set_title("The scissors: quality up, diversity down", fontsize=12, weight="bold")
+        ax1.spines["top"].set_visible(False); ax2.spines["top"].set_visible(False)
+        fig.tight_layout()
+
+    ani = animation.FuncAnimation(fig, frame, frames=len(conds), interval=900)
+    ani.save(FIGS / "gif_scissors.gif", writer=animation.PillowWriter(fps=1.4))
+    print("wrote gif_scissors.gif")
+
+
 if __name__ == "__main__":
     runs = load_runs()
     fig_dispersion(runs)
@@ -247,3 +328,5 @@ if __name__ == "__main__":
     fig_effdim(runs)
     fig_confound(runs)
     fig_pca(runs)
+    gif_pca_contraction(runs)
+    gif_scissors(runs)

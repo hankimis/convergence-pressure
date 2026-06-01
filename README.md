@@ -63,7 +63,38 @@ Three things, stated plainly:
 
 > The naive reading is "AI homogenizes culture." The sharper, better-supported one is: **a model that reflects the crowd back at itself homogenizes it, and adding variety to the advisor does not stop the loop.**
 
-The quality-vs-diversity scissors (individual quality holding or rising while collective diversity falls) is in [`paper/figs/fig2_scissors.png`](paper/figs/fig2_scissors.png).
+### The scissors: quality up, diversity down
+
+Individual quality is highest in exactly the conditions where collective diversity is lowest. Every writer gets a better piece; the culture loses the variance that lets it surprise itself.
+
+<p align="center">
+  <img alt="quality vs diversity scissors" src="paper/figs/gif_scissors.gif" width="70%">
+</p>
+
+### The cloud contracts
+
+Under the reflective loop, the population's embedding cloud pulls inward generation by generation (one theme shown; dispersion falls from 0.995 to 0.816):
+
+<p align="center">
+  <img alt="embedding cloud contracting over generations" src="paper/figs/gif_pca_contraction.gif" width="62%">
+</p>
+
+## Figures
+
+<table>
+<tr>
+<td width="50%"><img alt="dispersion by condition" src="paper/figs/fig1_dispersion.png"><br><sub><b>Fig 1.</b> Relative semantic dispersion vs generation, four conditions, ±SEM across three themes. The two non-reflective conditions stay flat; both reflective conditions decay.</sub></td>
+<td width="50%"><img alt="scissors" src="paper/figs/fig2_scissors.png"><br><sub><b>Fig 2.</b> The scissors: individual quality (bars) against population diversity (line) by condition.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img alt="effective dimensionality" src="paper/figs/fig3_effdim.png"><br><sub><b>Fig 3.</b> Effective dimensionality (participation ratio) stays flat: the population contracts in spread, not in rank.</sub></td>
+<td width="50%"><img alt="confound controls" src="paper/figs/fig4_confound.png"><br><sub><b>Fig 4.</b> The reflective-loop decline survives confound controls: raw cosine, anisotropy-centered, and length-matched.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img alt="PCA contraction static" src="paper/figs/fig5_pca.png"><br><sub><b>Fig 5.</b> Generation 0 (green) vs final generation (red) clouds projected to 2-D PCA: the spread collapses inward.</sub></td>
+<td width="50%"><img alt="convergence curves animated" src="paper/figs/fig1_dispersion.gif"><br><sub><b>Animated.</b> The four-condition convergence curves revealed generation by generation.</sub></td>
+</tr>
+</table>
 
 ## Method
 
